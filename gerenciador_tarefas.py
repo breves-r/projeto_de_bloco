@@ -1,4 +1,5 @@
 import pygame
+from pygame import KEYDOWN
 import psutil
 import cpuinfo
 import os
@@ -12,6 +13,7 @@ AZUL = (0,0,255)
 CINZA = (200, 200, 200)
 
 pygame.init()
+pygame.display.set_caption("Gerenciador de Tarefas")
 largura_tela, altura_tela = 1024, 600
 tela = pygame.display.set_mode((largura_tela, altura_tela))
 tela.fill(BRANCO)
@@ -52,23 +54,28 @@ def desenha_abas():
     mostra_texto("Processos",(921.5,25), BRANCO, cent=True, bold=True)
     return [aba0, aba1, aba2, aba3, aba4]
 
-def arquivos():
-    lista = os.listdir()
-    dic = {} 
+def arquivos(path):
+    path = r"c:{}".format(path)
+    lista = os.listdir(path)
+    dic = {}
     for i in lista:
-        if os.path.isfile(i):
+        if os.path.isfile((os.path.join(path,i))):
             dic[i] = []
-            dic[i].append(os.stat(i).st_size) # Tamanho
-            dic[i].append(os.stat(i).st_atime) # Tempo de criação
+            dic[i].append(os.stat(path +'\\'+i).st_size) # Tamanho
+            dic[i].append(os.stat(path+'\\'+i).st_atime) # Tempo de criação
+        if os.path.isdir((os.path.join(path,i))):
+            dic[i+' <DIR>'] = []
+            dic[i+' <DIR>'].append(os.stat(path+'\\'+i).st_size) # Tamanho
+            dic[i+' <DIR>'].append(os.stat(path+'\\'+i).st_atime) # Tempo de criação
 
     texto = "Tamanho"
-    mostra_texto(texto, (20, 120), PRETO, bold=True)
+    mostra_texto(texto, (20, 150), PRETO, bold=True)
     texto = "Data de Criação"
-    mostra_texto(texto, (220, 120), PRETO, bold=True)
+    mostra_texto(texto, (220, 150), PRETO, bold=True)
     texto = "Nome"
-    mostra_texto(texto, (520, 120), PRETO, bold=True)
+    mostra_texto(texto, (520, 150), PRETO, bold=True)
 
-    y=150
+    y=180
     for i in dic:
         kb = dic[i][0]/1000
         texto = f'{kb:.2f} KB'
@@ -232,14 +239,37 @@ def mostra_conteudo(i):
     else:
         processos()
 
+def welcome():
+    cont = pygame.Rect(100, 100, 824, 400)
+    pygame.draw.rect(tela, PRETO, cont, 3)
+    mostra_texto("Projeto de Bloco em Python", (512, 210), PRETO, cent=True, bold=True)
+    mostra_texto("Gerenciador de Tarefas", (512, 250), PRETO, cent=True, bold=True)
+    mostra_texto("Bloco: Arquitetura de Computadores, Sistemas Operacionais e Redes", (512, 290), PRETO, cent=True, bold=True)
+    mostra_texto("Grupo: Jean Oliveira, Nelson José, Rafaela Breves e Rafaela Oliveira", (512, 330), PRETO, cent=True, bold=True)
+    mostra_texto("Professora: Thaís Viana", (512, 370), PRETO, cent=True, bold=True)
 
+bsfont = pygame.font.SysFont('calibri', 22)
+usertext = ''
+inputt = pygame.Rect(120, 60, 270, 30)
+cor = PRETO
+
+def inpt(a):
+    if a == True:
+        mostra_texto("Caminho:", (20, 65), PRETO)
+        pygame.draw.rect(tela, cor, inputt, 2)
+
+ativo = False
+a = False
+enter = False
+inicio = True
 terminou = False
-i=1
 while not terminou:
     abas = desenha_abas()
-    mostra_texto("Projeto de Bloco", (512, 70), PRETO, cent=True, bold=True)
-    mostra_conteudo(i)
-
+    if inicio:
+        tela.fill(BRANCO)
+        desenha_abas()
+        welcome()
+    inpt(a)
 
     for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -248,18 +278,51 @@ while not terminou:
                 pos = pygame.mouse.get_pos()
                 for index, aba in enumerate(abas):
                     if aba.collidepoint(pos):
+                        inicio=False
+                        a = False
+                        tela.fill(BRANCO)
+                        #mostra_texto("Projeto de Bloco", (512, 70), PRETO, cent=True, bold=True)
                         if index==0:
-                            i=0
+                            cpu()
+                            uso_cpu()
+                            
                         elif index==1:
-                            i=1
+                            memoria()
+                            mostra_uso_disco()
+                            mostra_uso_memoria()
                         elif index==2:
-                            i=2
+                            rede()
                         elif index==3:
-                            i=3
+                            a = True
                         else:
-                            i=4
-
+                            processos()
+                if inputt.collidepoint(pos):
+                    ativo = True
+                else:
+                    ativo = False
+            elif event.type == KEYDOWN:
+                enter = False
+                if ativo == True:
+                    if event.key == pygame.K_BACKSPACE:
+                        usertext = usertext[:-1]
+                    else:
+                        usertext += event.unicode
+                    if event.key == pygame.K_RETURN:
+                        usertext = usertext[:-1]
+                        enter = True
+                            
+    if a:
+        txtsf = bsfont.render(usertext, True, PRETO)
+        tela.blit(txtsf, (inputt.x+5, inputt.y + 7))
     pygame.display.update()
-    tela.fill(BRANCO)
+
+    if ativo:
+        tela.fill(BRANCO)
+        if enter:
+            arquivos(usertext)
+        cor = CINZA
+    else:
+        cor=PRETO
+    #tela.fill(BRANCO)
 pygame.display.quit()
 pygame.quit()
