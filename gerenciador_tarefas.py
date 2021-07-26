@@ -54,19 +54,32 @@ def desenha_abas():
     mostra_texto("Processos",(921.5,25), BRANCO, cent=True, bold=True)
     return [aba0, aba1, aba2, aba3, aba4]
 
+def sizedir(caminho, dir):
+    p = os.path.join(caminho, dir)
+    total = 0
+    l2 = os.listdir(p)
+    for a in l2:
+        if os.path.isfile(os.path.join(p,a)):
+            total += os.stat(p+'\\'+a).st_size
+        if os.path.isdir(os.path.join(p,a)):
+            total += sizedir(p,a)
+    return total
+
 def arquivos(path):
     path = r"c:{}".format(path)
     lista = os.listdir(path)
     dic = {}
+    dic2={}
     for i in lista:
         if os.path.isfile((os.path.join(path,i))):
             dic[i] = []
             dic[i].append(os.stat(path +'\\'+i).st_size) # Tamanho
-            dic[i].append(os.stat(path+'\\'+i).st_atime) # Tempo de criação
+            dic[i].append(os.stat(path+'\\'+i).st_ctime) # Tempo de criação
         if os.path.isdir((os.path.join(path,i))):
-            dic[i+' <DIR>'] = []
-            dic[i+' <DIR>'].append(os.stat(path+'\\'+i).st_size) # Tamanho
-            dic[i+' <DIR>'].append(os.stat(path+'\\'+i).st_atime) # Tempo de criação
+            total = sizedir(path,i)
+            dic2[i+' <DIR>'] = []
+            dic2[i+' <DIR>'].append(total)
+            dic2[i+' <DIR>'].append(os.stat(path+'\\'+i).st_ctime) # Tempo de criação
 
     texto = "Tamanho"
     mostra_texto(texto, (20, 150), PRETO, bold=True)
@@ -76,6 +89,15 @@ def arquivos(path):
     mostra_texto(texto, (520, 150), PRETO, bold=True)
 
     y=180
+    for i in dic2:
+        kb = dic2[i][0]/1000
+        texto = f'{kb:.2f} KB'
+        mostra_texto(texto, (20, y), PRETO)
+        dia = time.ctime(dic2[i][1])
+        mostra_texto(dia, (220, y), PRETO)
+        texto = i
+        mostra_texto(i, (520, y), PRETO)
+        y = y+30
     for i in dic:
         kb = dic[i][0]/1000
         texto = f'{kb:.2f} KB'
@@ -281,7 +303,6 @@ while not terminou:
                         inicio=False
                         a = False
                         tela.fill(BRANCO)
-                        #mostra_texto("Projeto de Bloco", (512, 70), PRETO, cent=True, bold=True)
                         if index==0:
                             cpu()
                             uso_cpu()
