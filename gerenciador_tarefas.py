@@ -82,13 +82,13 @@ def arquivos(path):
             dic2[i+' <DIR>'].append(os.stat(path+'\\'+i).st_ctime) # Tempo de criação
 
     texto = "Tamanho"
-    mostra_texto(texto, (20, 150), PRETO, bold=True)
+    mostra_texto(texto, (20, 100), PRETO, bold=True)
     texto = "Data de Criação"
-    mostra_texto(texto, (220, 150), PRETO, bold=True)
+    mostra_texto(texto, (220, 100), PRETO, bold=True)
     texto = "Nome"
-    mostra_texto(texto, (520, 150), PRETO, bold=True)
+    mostra_texto(texto, (520, 100), PRETO, bold=True)
 
-    y=180
+    y=130
     for i in dic2:
         kb = dic2[i][0]/1000
         texto = f'{kb:.2f} KB'
@@ -127,44 +127,57 @@ def info_proc(pid, y):
     except:
         pass 
 
-def processos():
+def processos(pg):
     texto = "PID"
-    mostra_texto(texto, (20, 120), PRETO, bold=True)
+    mostra_texto(texto, (20, 80), PRETO, bold=True)
     texto = "# Threads"
-    mostra_texto(texto, (120, 120), PRETO, bold=True)
+    mostra_texto(texto, (120, 80), PRETO, bold=True)
     texto = "T. Usu."
-    mostra_texto(texto, (290, 120), PRETO, bold=True)
+    mostra_texto(texto, (290, 80), PRETO, bold=True)
     texto = "T. Sis."
-    mostra_texto(texto, (460, 120), PRETO, bold=True)
+    mostra_texto(texto, (460, 80), PRETO, bold=True)
     texto = "Mem.(%)"
-    mostra_texto(texto, (630, 120), PRETO, bold=True)
+    mostra_texto(texto, (630, 80), PRETO, bold=True)
     texto = "Executável"
-    mostra_texto(texto, (800, 120), PRETO, bold=True)
+    mostra_texto(texto, (800, 80), PRETO, bold=True)
     lista = psutil.pids()
-    lista = lista[:15]
-    y = 150
+    
+    y = 110
+
+    if pg == 1:
+        lista = lista[:15]
+    else:
+        last = pg * 15
+        init = last-15
+        lista = lista[init:last]
     for i in lista:
         info_proc(i, y)
         y = y + 30
 
+
+    pygame.draw.circle(tela, PRETO, (480, 580), 13, 2)
+    pygame.draw.circle(tela, PRETO, (520, 580), 13, 2)
+    pygame.draw.polygon(tela, PRETO, [(472, 580), (483, 572), (483, 588)])
+    pygame.draw.polygon(tela, PRETO, [(528, 580), (517, 572), (517, 588)])
+
 def memoria():
     disco = psutil.disk_usage('.')
     text = f"Total:"
-    mostra_texto(text,(20,120), PRETO, bold=True)
+    mostra_texto(text,(20,80), PRETO, bold=True)
     text = f"{format_memory(disco.total)} GB"
-    mostra_texto(text,(120,120), PRETO)
+    mostra_texto(text,(120,80), PRETO)
     text = f"Em uso:"
-    mostra_texto(text,(20,140), PRETO, bold=True)
+    mostra_texto(text,(20,100), PRETO, bold=True)
     text = f"{format_memory(disco.used)} GB"
-    mostra_texto(text,(120,140), PRETO)
+    mostra_texto(text,(120,100), PRETO)
     text = f"Livre:"
-    mostra_texto(text,(20,160), PRETO, bold=True)
+    mostra_texto(text,(20,120), PRETO, bold=True)
     text = f"{format_memory(disco.free)} GB"
-    mostra_texto(text,(120,160), PRETO)
+    mostra_texto(text,(120,120), PRETO)
     text = f"Percentual de Disco Usado:"
-    mostra_texto(text,(20,200), PRETO, bold=True)
+    mostra_texto(text,(20,160), PRETO, bold=True)
     text = f"{disco.percent:}%"
-    mostra_texto(text,(280,200), PRETO)
+    mostra_texto(text,(280,160), PRETO)
 
 def mostra_uso_disco():
     disco = psutil.disk_usage('.')
@@ -214,7 +227,7 @@ def cpu():
     texto_cpu(s1, "Palavra (bits):", "bits", 50)
     texto_cpu(s1, "Frequência (MHz):", "freq", 70)
     texto_cpu(s1, "Núcleos (físicos):", "nucleos", 90)
-    tela.blit(s1, (0, 100))
+    tela.blit(s1, (0, 70))
 
 def uso_cpu():
     s = pygame.surface.Surface((largura_tela, altura_tela-250))
@@ -238,9 +251,9 @@ def rede():
     dic_interfaces = psutil.net_if_addrs()
     ip = dic_interfaces['Wi-Fi'][1].address
     text = f"Endereço IP:"
-    mostra_texto(text,(20,120), PRETO, bold=True)
+    mostra_texto(text,(20,80), PRETO, bold=True)
     text = f"{ip}"
-    mostra_texto(text,(150,120), PRETO)
+    mostra_texto(text,(150,80), PRETO)
 
 def mostra_conteudo(i):
     if i==0:
@@ -274,12 +287,18 @@ bsfont = pygame.font.SysFont('calibri', 22)
 usertext = ''
 inputt = pygame.Rect(120, 60, 270, 30)
 cor = PRETO
+pg_down = pygame.Rect(470, 570, 20, 20)
+pg_up = pygame.Rect(510, 570, 20, 20)
+
+
 
 def inpt(a):
     if a == True:
         mostra_texto("Caminho:", (20, 65), PRETO)
         pygame.draw.rect(tela, cor, inputt, 2)
 
+
+pg = 1
 ativo = False
 a = False
 enter = False
@@ -316,11 +335,22 @@ while not terminou:
                         elif index==3:
                             a = True
                         else:
-                            processos()
+                            processos(pg)
+
+                if pg_down.collidepoint(pos):
+                    pg -= 1
+                    tela.fill(BRANCO)
+                    processos(pg)
+                if pg_up.collidepoint(pos):
+                    pg += 1
+                    tela.fill(BRANCO)
+                    processos(pg)
+
                 if inputt.collidepoint(pos):
                     ativo = True
                 else:
                     ativo = False
+                    
             elif event.type == KEYDOWN:
                 enter = False
                 if ativo == True:
