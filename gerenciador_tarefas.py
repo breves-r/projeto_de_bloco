@@ -4,6 +4,10 @@ import psutil
 import cpuinfo
 import os
 import time
+import matplotlib.pyplot as plt
+import matplotlib.backends.backend_agg as agg
+from matplotlib.figure import Figure
+
 
 BRANCO = (255,255,255)
 PRETO = (0,0,0)
@@ -79,11 +83,11 @@ def arquivos(path):
             total = sizedir(path,i)
             dic2[i+' <DIR>'] = []
             dic2[i+' <DIR>'].append(total)
-            dic2[i+' <DIR>'].append(os.stat(path+'\\'+i).st_ctime) # Tempo de criação
+            dic2[i+' <DIR>'].append(os.stat(path+'\\'+i).st_mtime) # Tempo de criação
 
     texto = "Tamanho"
     mostra_texto(texto, (20, 100), PRETO, bold=True)
-    texto = "Data de Criação"
+    texto = "Data de Modificação"
     mostra_texto(texto, (220, 100), PRETO, bold=True)
     texto = "Nome"
     mostra_texto(texto, (520, 100), PRETO, bold=True)
@@ -143,7 +147,6 @@ def processos(pg):
     lista = psutil.pids()
     
     y = 110
-
     if pg == 1:
         lista = lista[:15]
     else:
@@ -153,7 +156,6 @@ def processos(pg):
     for i in lista:
         info_proc(i, y)
         y = y + 30
-
 
     pygame.draw.circle(tela, PRETO, (480, 580), 13, 2)
     pygame.draw.circle(tela, PRETO, (520, 580), 13, 2)
@@ -228,6 +230,14 @@ def cpu():
     texto_cpu(s1, "Frequência (MHz):", "freq", 70)
     texto_cpu(s1, "Núcleos (físicos):", "nucleos", 90)
     tela.blit(s1, (0, 70))
+    mostra_texto("Uso de CPU por núcleo:", (512, 230), PRETO, cent=True, bold=True)
+    barras = pygame.Rect(780, 215, 100,30)
+    pygame.draw.rect(tela, PRETO, barras)
+    mostra_texto("Barras",(830,230), BRANCO, cent=True, bold=True)
+    graf = pygame.Rect(900, 215, 100,30)
+    pygame.draw.rect(tela, PRETO, graf)
+    mostra_texto("Gráfico",(950,230), BRANCO, cent=True, bold=True)
+    return barras, graf
 
 def uso_cpu():
     s = pygame.surface.Surface((largura_tela, altura_tela-250))
@@ -243,17 +253,35 @@ def uso_cpu():
         pygame.draw.rect(s, VERMELHO, (d, y, larg, alt))
         pygame.draw.rect(s, AZUL, 	(d, y, larg, (1-i/100)*alt))
         d = d + larg + desl
-    mostra_texto("Uso da CPU por núcleo:", (512, 230), PRETO, cent=True, bold=True)
     # parte mais abaixo da tela e à esquerda
     tela.blit(s, (0, 250))
 
 def rede():
     dic_interfaces = psutil.net_if_addrs()
-    ip = dic_interfaces['Wi-Fi'][1].address
+    ip = dic_interfaces['Wi-Fi'][1].address #ou [wlan0] ou [eth0] etc
     text = f"Endereço IP:"
     mostra_texto(text,(20,80), PRETO, bold=True)
     text = f"{ip}"
     mostra_texto(text,(150,80), PRETO)
+    mascara = dic_interfaces['Wi-Fi'][1].netmask #ou [wlan0] ou [eth0] etc
+    text = f"Máscara de subrede:"
+    mostra_texto(text,(20,110), PRETO, bold=True)
+    text = f"{mascara}"
+    mostra_texto(text,(230,110), PRETO)
+    text = f"Uso de dados de rede por interface:"
+    mostra_texto(text,(20,140), PRETO, bold=True)
+    io_status = psutil.net_io_counters(pernic=True)
+    nomes = []
+    y = 170
+    for i in io_status:
+        nomes.append(str(i))
+    for j in nomes:
+        usage = (io_status[j].bytes_sent + io_status[j].bytes_recv)/1000/1000
+        text = f"{j}:"
+        mostra_texto(text,(20,y), PRETO)
+        text = f"{round(usage,2)} MB"
+        mostra_texto(text,(300,y), PRETO)
+        y += 30
 
 def mostra_conteudo(i):
     if i==0:
@@ -283,13 +311,45 @@ def welcome():
     mostra_texto("Grupo: Jean Oliveira, Nelson José, Rafaela Breves e Rafaela Oliveira", (512, 330), PRETO, cent=True, bold=True)
     mostra_texto("Professora: Thaís Viana", (512, 370), PRETO, cent=True, bold=True)
 
+
+def desenha_grafico(d):
+    x = (0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0)
+    fig = Figure(figsize=(6, 3.4), dpi=100)
+    ax = fig.add_subplot()
+    for n in range(len(d)):
+        ax.plot(x, d[f'nuc{n}'])
+    canvas = agg.FigureCanvasAgg(fig)
+    canvas.draw()
+    renderer = canvas.get_renderer()
+    raw_data = renderer.tostring_rgb()
+    return canvas, raw_data
+
+
+def grafico_cpu():
+    screen = pygame.display.get_surface()
+    dic_nucleos = {}
+    nucleos = psutil.cpu_count()
+    for n in range(nucleos):
+        dic_nucleos[f"nuc{n}"] = []
+    for i in range(10):
+        cpuinfo = psutil.cpu_percent(interval=None, percpu=True)
+        for j in range(len(cpuinfo)):
+            dic_nucleos[f"nuc{j}"].append(cpuinfo[j])
+        time.sleep(0.5)
+
+    canvas, raw_data = desenha_grafico(dic_nucleos)
+    size = canvas.get_width_height()
+    surf = pygame.image.fromstring(raw_data, size, "RGB")
+    screen.blit(surf, (200, 250))
+
+
 bsfont = pygame.font.SysFont('calibri', 22)
 usertext = ''
-inputt = pygame.Rect(120, 60, 270, 30)
+inputt = pygame.Rect(120, 60, 300, 30)
 cor = PRETO
 pg_down = pygame.Rect(470, 570, 20, 20)
 pg_up = pygame.Rect(510, 570, 20, 20)
-
+nuc_cpu = False
 
 
 def inpt(a):
@@ -300,7 +360,7 @@ def inpt(a):
 
 pg = 1
 ativo = False
-a = False
+aba_arq = False
 enter = False
 inicio = True
 terminou = False
@@ -310,7 +370,7 @@ while not terminou:
         tela.fill(BRANCO)
         desenha_abas()
         welcome()
-    inpt(a)
+    inpt(aba_arq)
 
     for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -320,11 +380,11 @@ while not terminou:
                 for index, aba in enumerate(abas):
                     if aba.collidepoint(pos):
                         inicio=False
-                        a = False
+                        aba_arq = False
                         tela.fill(BRANCO)
                         if index==0:
-                            cpu()
-                            uso_cpu()
+                            barras, graf = cpu()
+                            nuc_cpu = True
                             
                         elif index==1:
                             memoria()
@@ -333,9 +393,20 @@ while not terminou:
                         elif index==2:
                             rede()
                         elif index==3:
-                            a = True
+                            aba_arq = True
                         else:
                             processos(pg)
+
+
+                if nuc_cpu:
+                    if barras.collidepoint(pos):
+                        tela.fill(BRANCO)
+                        cpu()
+                        uso_cpu()
+                    elif graf.collidepoint(pos):
+                        tela.fill(BRANCO)
+                        cpu()
+                        grafico_cpu()
 
                 if pg_down.collidepoint(pos):
                     pg -= 1
@@ -361,8 +432,9 @@ while not terminou:
                     if event.key == pygame.K_RETURN:
                         usertext = usertext[:-1]
                         enter = True
-                            
-    if a:
+
+
+    if aba_arq:
         txtsf = bsfont.render(usertext, True, PRETO)
         tela.blit(txtsf, (inputt.x+5, inputt.y + 7))
     pygame.display.update()
