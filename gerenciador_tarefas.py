@@ -145,8 +145,8 @@ def processos(pg):
     texto = "Executável"
     mostra_texto(texto, (800, 80), PRETO, bold=True)
     lista = psutil.pids()
-    
     y = 110
+
     if pg == 1:
         lista = lista[:15]
     else:
@@ -256,51 +256,53 @@ def uso_cpu():
     # parte mais abaixo da tela e à esquerda
     tela.blit(s, (0, 250))
 
-def rede():
-    dic_interfaces = psutil.net_if_addrs()
-    ip = dic_interfaces['Wi-Fi'][1].address #ou [wlan0] ou [eth0] etc
-    text = f"Endereço IP:"
-    mostra_texto(text,(20,80), PRETO, bold=True)
-    text = f"{ip}"
-    mostra_texto(text,(150,80), PRETO)
-    mascara = dic_interfaces['Wi-Fi'][1].netmask #ou [wlan0] ou [eth0] etc
-    text = f"Máscara de subrede:"
-    mostra_texto(text,(20,110), PRETO, bold=True)
-    text = f"{mascara}"
-    mostra_texto(text,(230,110), PRETO)
-    text = f"Uso de dados de rede por interface:"
-    mostra_texto(text,(20,140), PRETO, bold=True)
+def redes():
+    texto = "Interface:"
+    mostra_texto(texto, (20, 80), PRETO, bold=True)
+    interfaces = psutil.net_if_addrs()
+    status = psutil.net_if_stats()
     io_status = psutil.net_io_counters(pernic=True)
     nomes = []
-    y = 170
-    for i in io_status:
+    for i in interfaces:
         nomes.append(str(i))
-    for j in nomes:
-        usage = (io_status[j].bytes_sent + io_status[j].bytes_recv)/1000/1000
-        text = f"{j}:"
-        mostra_texto(text,(20,y), PRETO)
-        text = f"{round(usage,2)} MB"
-        mostra_texto(text,(300,y), PRETO)
+
+    y = 115
+    for i in nomes:
+        texto = f'{i}:'
+        mostra_texto(texto, (100, y), PRETO, bold=True)
         y += 30
+        y_2 = y
+        texto = "Ativo:"
+        mostra_texto(texto, (500, y_2), PRETO)
+        texto = f"{status[i].isup}"
+        mostra_texto(texto, (630, y_2), PRETO)
 
-def mostra_conteudo(i):
-    if i==0:
-        cpu()
-        uso_cpu()
+        y_2 += 20
+        texto = "Velocidade:"
+        mostra_texto(texto, (500, y_2), PRETO)
+        texto = f"{status[i].speed} MB"
+        mostra_texto(texto, (630, y_2), PRETO)
 
-    elif i==1:
-        memoria()
-        mostra_uso_disco()
-        mostra_uso_memoria()
+        text = f"Uso de dados:"
+        mostra_texto(text,(750,(y+10)), PRETO)
+        usage = (io_status[i].bytes_sent + io_status[i].bytes_recv)/1000/1000
+        text = f"{round(usage,2)} MB"
+        mostra_texto(text,(890,(y+10)), PRETO)
 
-    elif i==2:
-        rede()
+        for j in interfaces[i]:
+            if str(j.family) == 'AddressFamily.AF_INET':
+                texto = "Endereço IP:"
+                mostra_texto(texto, (130, y), PRETO)
+                texto = f"{j.address}"
+                mostra_texto(texto, (300, y), PRETO)
 
-    elif i==3:
-        arquivos()
-    
-    else:
-        processos()
+                y+=20
+                texto = "Máscara de rede:"
+                mostra_texto(texto, (130, y), PRETO)
+                texto = f"{j.netmask}"
+                mostra_texto(texto, (300, y), PRETO)
+                y += 30
+                break
 
 def welcome():
     cont = pygame.Rect(100, 100, 824, 400)
@@ -310,7 +312,6 @@ def welcome():
     mostra_texto("Bloco: Arquitetura de Computadores, Sistemas Operacionais e Redes", (512, 290), PRETO, cent=True, bold=True)
     mostra_texto("Grupo: Jean Oliveira, Nelson José, Rafaela Breves e Rafaela Oliveira", (512, 330), PRETO, cent=True, bold=True)
     mostra_texto("Professora: Thaís Viana", (512, 370), PRETO, cent=True, bold=True)
-
 
 def desenha_grafico(d):
     x = (0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0)
@@ -323,7 +324,6 @@ def desenha_grafico(d):
     renderer = canvas.get_renderer()
     raw_data = renderer.tostring_rgb()
     return canvas, raw_data
-
 
 def grafico_cpu():
     screen = pygame.display.get_surface()
@@ -343,26 +343,27 @@ def grafico_cpu():
     screen.blit(surf, (200, 250))
 
 
+# Input aba arquivos
 bsfont = pygame.font.SysFont('calibri', 22)
 usertext = ''
 inputt = pygame.Rect(120, 60, 300, 30)
 cor = PRETO
-pg_down = pygame.Rect(470, 570, 20, 20)
-pg_up = pygame.Rect(510, 570, 20, 20)
-nuc_cpu = False
-
 
 def inpt(a):
     if a == True:
         mostra_texto("Caminho:", (20, 65), PRETO)
         pygame.draw.rect(tela, cor, inputt, 2)
 
-
+#Paginação aba Processos
 pg = 1
-ativo = False
-aba_arq = False
-enter = False
-inicio = True
+pg_down = pygame.Rect(470, 570, 20, 20)
+pg_up = pygame.Rect(510, 570, 20, 20)
+
+ativo = False #input arquivos
+aba_arq = False #aba arquivos
+enter = False #enter input arquivos
+inicio = True #tela inicial
+nuc_cpu = False #contagem uso cpu
 terminou = False
 while not terminou:
     abas = desenha_abas()
@@ -391,7 +392,7 @@ while not terminou:
                             mostra_uso_disco()
                             mostra_uso_memoria()
                         elif index==2:
-                            rede()
+                            redes()
                         elif index==3:
                             aba_arq = True
                         else:
