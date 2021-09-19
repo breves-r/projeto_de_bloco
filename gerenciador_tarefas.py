@@ -70,7 +70,7 @@ def sizedir(caminho, dir):
     return total
 
 def arquivos(path):
-    path = r"c:{}".format(path)
+    path = r"{}".format(path)
     lista = os.listdir(path)
     dic = {}
     dic2={}
@@ -95,7 +95,11 @@ def arquivos(path):
     y=130
     for i in dic2:
         kb = dic2[i][0]/1000
-        texto = f'{kb:.2f} KB'
+        if kb > 1000:
+            mb = kb/1000
+            texto = f'{mb:.2f} MB'
+        else:
+            texto = f'{kb:.2f} KB'
         mostra_texto(texto, (20, y), PRETO)
         dia = time.ctime(dic2[i][1])
         mostra_texto(dia, (220, y), PRETO)
@@ -315,7 +319,7 @@ def welcome():
 
 def desenha_grafico(d):
     x = (0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0)
-    fig = Figure(figsize=(6, 3.4), dpi=100)
+    fig = Figure(figsize=(5.8, 3.2), dpi=100)
     ax = fig.add_subplot()
     for n in range(len(d)):
         ax.plot(x, d[f'nuc{n}'])
@@ -340,7 +344,8 @@ def grafico_cpu():
     canvas, raw_data = desenha_grafico(dic_nucleos)
     size = canvas.get_width_height()
     surf = pygame.image.fromstring(raw_data, size, "RGB")
-    screen.blit(surf, (200, 250))
+    screen.blit(surf, (200, 240)) 
+    mostra_texto("tempo(s)", (512, 580), PRETO, cent=True)
 
 
 # Input aba arquivos
@@ -447,6 +452,6 @@ while not terminou:
         cor = CINZA
     else:
         cor=PRETO
-    #tela.fill(BRANCO)
+
 pygame.display.quit()
 pygame.quit()
